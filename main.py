@@ -27,7 +27,8 @@ def runmovie(moviename, moviemask, outdir):
     vidFile = cv2.VideoCapture(moviename)
     num_frames = vidFile.get(cv2.CAP_PROP_FRAME_COUNT)
     fps = vidFile.get(cv2.CAP_PROP_FPS)
-
+    w = int(vidFile.get(cv2.CAP_PROP_FRAME_WIDTH))
+    h = int(vidFile.get(cv2.CAP_PROP_FRAME_HEIGHT))
     vidFile2 = cv2.VideoCapture(moviemask)
     num_frames2 = vidFile2.get(cv2.CAP_PROP_FRAME_COUNT)
     fps2 = vidFile2.get(cv2.CAP_PROP_FPS)
@@ -112,6 +113,7 @@ def runmovie(moviename, moviemask, outdir):
     play_flag = 1
     zoom_flag = 0
     while vidFile.isOpened():
+        starttime = time.time()
         # イベントを取得
         event, values = window.read(timeout=0)
 
@@ -190,15 +192,13 @@ def runmovie(moviename, moviemask, outdir):
         playtime_elem.update(str(cur_time) + " s")
         cur_frame += 1
 
-        secs = cur_frame // 11
+        secs = int(cur_frame // fps)
         sec = secs % 60
         mins = secs // 60
         min = mins % 60
         hr = mins // 60
 
         timestump = str(hr) + ":" + str(min).zfill(2) + ":" + str(sec).zfill(2)
-        cv2.putText(frame, timestump, org=(30, 60), fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-                    fontScale=2.0, color=(0, 0, 0), thickness=4, lineType=cv2.LINE_4)
         if len(df) > cur_frame:
             if df.iat[cur_frame, 2] == 1:
                 txt = "Freezing"
@@ -206,16 +206,28 @@ def runmovie(moviename, moviemask, outdir):
             else:
                 txt = "Moving"
                 color = (0, 0, 255)
-            cv2.putText(frame, txt, org=(320, 60), fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-                        fontScale=1.5, color=color, thickness=4, lineType=cv2.LINE_4)
-        frm_o = copy.copy(frame)
-        frm_o = cv2.resize(frm_o, dsize=None, fx=0.3, fy=0.3)
-        imgbytes = cv2.imencode('.png', frm_o)[1].tobytes()
-        time.sleep(0)
-        image_elem.update(data=imgbytes)
 
+        # 出力画像サイズを一定（縦240px）に保つ
+        frm_o = copy.copy(frame)
+        rate = 240/h
+        frm_o = cv2.resize(frm_o, dsize=None, fx=rate, fy=rate)
+        # タイムスタンプとfreeze/moveを表示
+        cv2.putText(frm_o, timestump, org=(20, 30), fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                    fontScale=0.7, color=(0, 0, 0), thickness=2, lineType=cv2.LINE_4)
+        cv2.putText(frm_o, txt, org=(120, 30), fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                        fontScale=0.6, color=color, thickness=2, lineType=cv2.LINE_4)
+        # 画面出力用にpng化,バッファに保存
+        imgbytes = cv2.imencode('.png', frm_o)[1].tobytes()
+        # 処理時間合わせ
+        totaltime = 1/fps
+        waittime = totaltime - ( time.time() - starttime + 0.04 )
+        if waittime > 0:
+            time.sleep(waittime)
+        # 画像更新
+        image_elem.update(data=imgbytes)
+        # New >> old
         frm2_o = copy.copy(frame2)
-        frm2_o = cv2.resize(frm2_o, dsize=None, fx=0.3, fy=0.3)
+        frm2_o = cv2.resize(frm2_o, dsize=None, fx=rate, fy=rate)
         imgbytes = cv2.imencode('.png', frm_o)[1].tobytes()
         imgbytes2 = cv2.imencode('.png', frm2_o)[1].tobytes()
         image2_elem.update(data=imgbytes2)
@@ -236,7 +248,10 @@ tkinter.messagebox.showinfo(programname, 'Please select output folder.')
 outdir = tkinter.filedialog.askdirectory(initialdir="~")
 
 param = setparam.setparam(movie)
+
+vidFile = cv2.VideoCapture(movie)
+fps = vidFile.get(cv2.CAP_PROP_FPS)
 # mouse ditection and calclate moving -> csv file
-csv_out = movieproc.proc(movie, outdir, param)
+csv_out = movieproc.proc(movie, outdir, param,fps)
 movie_mask = os.path.join(outdir, "masked.mp4")
 runmovie(movie, movie_mask, outdir)

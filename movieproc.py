@@ -9,7 +9,7 @@ import PySimpleGUI as sg
 import tqdm
 
 
-def proc(movie, outdir, param):
+def proc(movie, outdir, param,fps):
     cap = cv2.VideoCapture(movie)
 
     divider = 1
@@ -81,7 +81,7 @@ def proc(movie, outdir, param):
             out_frame[img_xor > 0] = (0,0,255)
             cnt = cv2.countNonZero(img_xor) # Calculate amount of movement
             writer.write(out_frame)
-            writer_csv.writerow([str(i/11),cnt])
+            writer_csv.writerow([str(i/fps),cnt])
 
 
 
