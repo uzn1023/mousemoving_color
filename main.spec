@@ -5,7 +5,7 @@ block_cipher = None
 
 
 a = Analysis(['main.py'],
-             pathex=['E:\\SSG_Share_1\\Uezono\\mousemoving_mono'],
+             pathex=['E:\\SSG_Share_1\\Uezono\\mousemoving_color'],
              binaries=[],
              datas=[],
              hiddenimports=[],
