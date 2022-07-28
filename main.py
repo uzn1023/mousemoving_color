@@ -235,7 +235,7 @@ def runmovie(moviename, moviemask, outdir):
 
 # 起動画面
 print("<<<MouseFreezingDetection>>>")
-print("Ver. 0.1 : 2022.03.31")
+print("Ver. 0.4 : 2022.07.28")
 print("For color videos")
 
 programname = "MouseDitection"

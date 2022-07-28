@@ -68,29 +68,30 @@ def proc(movie, outdir, param,fps):
     window = sg.Window('Progres', layout)
     for i in tqdm.tqdm(range(frame_count)):
         ret, frame = cap.read()
-        mask_mouse,mask_cable, mask_cage = img_proc(frame,param)
-        out_frame = np.ones((int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), 3),np.uint8)*255
-        out_frame[mask_mouse > 0] = (255,0,0)
-        out_frame[mask_cable > 0] = (0,255,0)
-        out_frame[mask_cage == 0] = (125,125,125)
-        if (i > 0) and (i % divider == 0):
-            # Taking difference of mouse region
-            img_xor = cv2.bitwise_xor(mask_mouse,mask_mouse_old)
-            img_xor[(mask_cable != 0) | (mask_cable_old != 0)] = 0  # ケーブルがマウスの上を動いたことがマウスの動きと判定されるのを防ぐ
+        if frame is not None: # Frame が存在しない時処理をスキップ
+            mask_mouse,mask_cable, mask_cage = img_proc(frame,param)
+            out_frame = np.ones((int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), 3),np.uint8)*255
+            out_frame[mask_mouse > 0] = (255,0,0)
+            out_frame[mask_cable > 0] = (0,255,0)
+            out_frame[mask_cage == 0] = (125,125,125)
+            if (i > 0) and (i % divider == 0):
+                # Taking difference of mouse region
+                img_xor = cv2.bitwise_xor(mask_mouse,mask_mouse_old)
+                img_xor[(mask_cable != 0) | (mask_cable_old != 0)] = 0  # ケーブルがマウスの上を動いたことがマウスの動きと判定されるのを防ぐ
 
-            out_frame[img_xor > 0] = (0,0,255)
-            cnt = cv2.countNonZero(img_xor) # Calculate amount of movement
-            writer.write(out_frame)
-            writer_csv.writerow([str(i/fps),cnt])
+                out_frame[img_xor > 0] = (0,0,255)
+                cnt = cv2.countNonZero(img_xor) # Calculate amount of movement
+                writer.write(out_frame)
+                writer_csv.writerow([str(i/fps),cnt])
 
 
 
-        if i % divider == 0:
-            mask_mouse_old = mask_mouse
-            mask_cable_old = mask_cable
+            if i % divider == 0:
+                mask_mouse_old = mask_mouse
+                mask_cable_old = mask_cable
 
-        window.read(timeout=0)
-        window['-PROG-'].update(i+1)
+            window.read(timeout=0)
+            window['-PROG-'].update(i+1)
     writer.release()
     cap.release()
     cv2.destroyAllWindows()
